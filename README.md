@@ -9,10 +9,16 @@
 - 功能示例文档入口：[`docs/examples/README.md`](./docs/examples/README.md)
 - 示例代码约定：[`examples/README.md`](./examples/README.md)
 - AI 协作规范：[`AGENTS.md`](./AGENTS.md)
+- 内存池设计文档：[`docs/designs/memory-pool-design.md`](./docs/designs/memory-pool-design.md)
 
-## 当前状态
+## 当前模块
 
-当前仓库已完成基础初始化，但尚未添加正式主模块。
+- `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，支持 `Buffer` 包装、`Scope` 请求级批量释放，以及可选的 `debug` 构建期安全检查。
+
+## 模块文档与示例
+
+- `mempool` 示例文档：[`docs/examples/mempool.md`](./docs/examples/mempool.md)
+- `mempool` 示例代码：[`examples/mempool/`](./examples/mempool/)
 
 后续每新增一个主模块时，必须同步完成以下事项：
 
