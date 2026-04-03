@@ -10,15 +10,19 @@
 - 示例代码约定：[`examples/README.md`](./examples/README.md)
 - AI 协作规范：[`AGENTS.md`](./AGENTS.md)
 - 内存池设计文档：[`docs/designs/memory-pool-design.md`](./docs/designs/memory-pool-design.md)
+- 日志模块设计文档：[`docs/designs/log-design.md`](./docs/designs/log-design.md)
 
 ## 当前模块
 
 - `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，支持 `Buffer` 包装、`Scope` 请求级批量释放，以及可选的 `debug` 构建期安全检查。
+- `log`：基于 `zap` 的全局单例日志封装，支持控制台 / 文件 / 双输出、运行时调级和未初始化阶段的控制台兜底输出。
 
 ## 模块文档与示例
 
 - `mempool` 示例文档：[`docs/examples/mempool.md`](./docs/examples/mempool.md)
 - `mempool` 示例代码：[`examples/mempool/`](./examples/mempool/)
+- `log` 示例文档：[`docs/examples/log.md`](./docs/examples/log.md)
+- `log` 示例代码：[`examples/log/`](./examples/log/)
 
 后续每新增一个主模块时，必须同步完成以下事项：
 

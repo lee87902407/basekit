@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-当前仓库已落地首个正式主模块 `mempool`，后续其他基础能力会按主模块逐步加入。
+当前仓库已落地正式主模块 `mempool` 与 `log`，后续其他基础能力会按主模块逐步加入。
 
 ## 目录说明
 
@@ -41,6 +41,30 @@
 - 默认构建下，`Buffer` 不会对 `use after release` 或重复 `Release` 做 panic 检查；如果释放后又继续使用，会自动恢复为可继续托管、可被后续 `Scope.Close()` 回收的状态。
 - 使用 `go test -tags debug ./...`、`go build -tags debug ./...` 等方式加入 `debug` 标签时，会启用 `Buffer` 的运行时安全检查，用于在开发和测试阶段更早暴露误用。
 
+### log
+
+`log` 是一个基于 `zap` 的全局单例日志模块，适用于服务启动日志、业务结构化日志和本地开发调试场景，支持：
+
+- 全局 `Init(Config)` 初始化
+- `Debug` / `Info` / `Warn` / `Error` / `Sync` 包级调用
+- `OutputModeConsole` / `OutputModeFile` / `OutputModeBoth`
+- 控制台文本输出与文件 JSON 输出
+- 基于 `lumberjack` 的按大小轮转与历史保留
+- 运行时通过 `SetLevel` 动态调级
+- 未初始化阶段使用默认控制台 logger 兜底
+
+相关入口：
+
+- 设计文档：[`docs/designs/log-design.md`](./docs/designs/log-design.md)
+- 示例文档：[`docs/examples/log.md`](./docs/examples/log.md)
+- 示例代码：[`examples/log/`](./examples/log/)
+
+行为说明：
+
+- `Init` 只允许成功一次，重复调用会返回错误。
+- 如果业务在 `Init` 前调用 `Debug` / `Info` / `Warn` / `Error`，模块会退化为默认控制台 logger，而不是直接丢日志。
+- 控制台输出使用文本格式，文件输出使用 JSON 格式；双输出模式下二者同时生效。
+
 ## 文档维护规则
 
 新增一个主模块时，必须同时完成以下更新：
@@ -60,6 +84,7 @@
 ## 相关入口
 
 - 统一入口：[`README.md`](./README.md)
+- 日志模块设计文档：[`docs/designs/log-design.md`](./docs/designs/log-design.md)
 - 设计文档：[`docs/designs/memory-pool-design.md`](./docs/designs/memory-pool-design.md)
 - 功能示例文档：[`docs/examples/README.md`](./docs/examples/README.md)
 - 示例代码约定：[`examples/README.md`](./examples/README.md)

@@ -6,7 +6,7 @@
 
 ## Current Status
 
-The repository now includes its first formal module, `mempool`, and additional foundational modules will be added incrementally.
+The repository now includes formal modules `mempool` and `log`, and additional foundational modules will be added incrementally.
 
 ## Structure
 
@@ -41,6 +41,30 @@ Behavior notes:
 - In the default build, `Buffer` does not panic on use-after-release or double-release checks; if it is used again after release, it automatically becomes managed again so a later `Scope.Close()` can still reclaim it.
 - When built or tested with `-tags debug`, `Buffer` enables runtime safety checks so misuse can fail fast during development and verification.
 
+### log
+
+`log` is a global singleton logging module built on top of `zap`, intended for service startup logs, structured business logs, and local debugging workflows. It supports:
+
+- global `Init(Config)` initialization
+- package-level `Debug` / `Info` / `Warn` / `Error` / `Sync`
+- `OutputModeConsole` / `OutputModeFile` / `OutputModeBoth`
+- console text output and file JSON output
+- size-based file rotation and retention through `lumberjack`
+- runtime level changes through `SetLevel`
+- fallback console logging before explicit initialization
+
+Links:
+
+- Design doc: [`docs/designs/log-design.md`](./docs/designs/log-design.md)
+- Example doc: [`docs/examples/log.md`](./docs/examples/log.md)
+- Example code: [`examples/log/`](./examples/log/)
+
+Behavior notes:
+
+- `Init` is allowed to succeed only once; repeated calls return an error.
+- If business code calls `Debug` / `Info` / `Warn` / `Error` before `Init`, the module falls back to a default console logger instead of dropping the logs.
+- Console output uses a text encoder, file output uses a JSON encoder, and both are active together in dual-output mode.
+
 ## Maintenance Rules
 
 Whenever a new main module is added, the following updates are required:
@@ -59,6 +83,7 @@ Whenever a new main module is added, the following updates are required:
 ## Links
 
 - Unified entry: [`README.md`](./README.md)
+- Log design doc: [`docs/designs/log-design.md`](./docs/designs/log-design.md)
 - Design doc: [`docs/designs/memory-pool-design.md`](./docs/designs/memory-pool-design.md)
 - Example documents: [`docs/examples/README.md`](./docs/examples/README.md)
 - Example code guide: [`examples/README.md`](./examples/README.md)

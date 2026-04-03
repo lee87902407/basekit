@@ -19,3 +19,4 @@
 当前仓库已引入正式主模块示例代码：
 
 - `examples/mempool/`：展示 `mempool` 的最小可运行用法。
+- `examples/log/`：展示 `log` 模块的最小可运行初始化与输出方式。
