@@ -2,7 +2,7 @@ package mempool
 
 type Scope struct {
 	pool    BytePool
-	buffers []*Buffer
+	buffers []bufferLifecycle
 	raws    [][]byte
 	closed  bool
 }
