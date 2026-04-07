@@ -14,7 +14,7 @@
 
 ## 当前模块
 
-- `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，支持 `Buffer` 包装、`Scope` 请求级批量释放，以及可选的 `debug` 构建期安全检查。
+- `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，提供统一的 `Buffer` 接口与 `BufferType` 标识，支持 `HeapBuffer` / `NativeBuffer`、可注入释放函数的原生资源托管、`Scope` 请求级批量释放，以及可选的 `debug` 构建期安全检查。
 - `log`：基于 `zap` 的全局单例日志封装，支持控制台 / 文件 / 双输出、运行时调级和未初始化阶段的控制台兜底输出。
 
 ## 模块文档与示例

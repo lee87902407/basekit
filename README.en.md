@@ -26,7 +26,10 @@ The repository now includes formal modules `mempool` and `log`, and additional f
 
 - bucketed reuse up to 512KB
 - exact allocation and drop-on-put for oversized buffers
-- optional `Buffer` wrapper objects
+- a shared `Buffer` interface
+- `Buffer.Type()` plus `BufferTypeHeap` / `BufferTypeNative` constants
+- writable `HeapBuffer` wrapper objects
+- read-only `NativeBuffer` wrappers for cgo-backed memory
 - request-scoped batch cleanup through `Scope`
 - optional runtime misuse checks behind the `debug` build tag
 
@@ -38,8 +41,12 @@ Links:
 
 Behavior notes:
 
-- In the default build, `Buffer` does not panic on use-after-release or double-release checks; if it is used again after release, it automatically becomes managed again so a later `Scope.Close()` can still reclaim it.
-- When built or tested with `-tags debug`, `Buffer` enables runtime safety checks so misuse can fail fast during development and verification.
+- `mempool.NewHeapBuffer` creates the pooled writable implementation, while `Scope.NewBuffer` continues to return `*HeapBuffer`, which implements the shared `Buffer` interface.
+- When cgo is enabled, `mempool.NewNativeBuffer`, `Scope.NewNativeBuffer`, and `Scope.GetNativeBuffer` wrap native memory as a read-only `Buffer`; every write-style method panics immediately, and release is delegated to the injected `freeFun` callback.
+- `Scope.GetHeapBuffer` allocates and tracks raw heap `[]byte`; the old `Track` entrypoint has been removed.
+- In the default build, `HeapBuffer` does not panic on use-after-release or double-release checks; if it is used again after release, it automatically becomes managed again so a later `Scope.Close()` can still reclaim it.
+- When built or tested with `-tags debug`, `Buffer` lifecycle tracking enables runtime safety checks so misuse can fail fast during development and verification.
+- Once `Scope.Close()` has been called, subsequent calls to `GetHeapBuffer`, `NewBuffer`, `NewNativeBuffer`, or `GetNativeBuffer` panic to prevent resources from escaping the scope cleanup path.
 
 ### log
 

@@ -26,7 +26,10 @@
 
 - 512KB 以内 bucket 化复用
 - 超限对象直接分配、归还丢弃
-- `Buffer` 包装对象
+- 统一的 `Buffer` 接口
+- `Buffer.Type()` 类型标识与 `BufferTypeHeap` / `BufferTypeNative` 常量
+- 可写的 `HeapBuffer` 包装对象
+- cgo 场景下只读的 `NativeBuffer`
 - `Scope` 请求级统一释放
 - `debug` 构建标签下的 `Buffer` 误用检查
 
@@ -38,8 +41,12 @@
 
 行为说明：
 
-- 默认构建下，`Buffer` 不会对 `use after release` 或重复 `Release` 做 panic 检查；如果释放后又继续使用，会自动恢复为可继续托管、可被后续 `Scope.Close()` 回收的状态。
-- 使用 `go test -tags debug ./...`、`go build -tags debug ./...` 等方式加入 `debug` 标签时，会启用 `Buffer` 的运行时安全检查，用于在开发和测试阶段更早暴露误用。
+- `mempool.NewHeapBuffer` 返回池化可写缓冲；`Scope.NewBuffer` 继续返回 `*HeapBuffer`，并由 `HeapBuffer` 实现统一的 `Buffer` 接口。
+- cgo 开启时可通过 `mempool.NewNativeBuffer`、`Scope.NewNativeBuffer` 或 `Scope.GetNativeBuffer` 包装原生内存；`NativeBuffer` 只支持只读访问与释放，任何写入类方法都会直接 panic，释放时会调用注入的 `freeFun`。
+- `Scope.GetHeapBuffer` 用于申请并托管原始 heap `[]byte`；原 `Track` 已移除，外部原始切片不再单独挂入 `Scope`。
+- 默认构建下，`HeapBuffer` 不会对 `use after release` 或重复 `Release` 做 panic 检查；如果释放后又继续使用，会自动恢复为可继续托管、可被后续 `Scope.Close()` 回收的状态。
+- 使用 `go test -tags debug ./...`、`go build -tags debug ./...` 等方式加入 `debug` 标签时，会启用 `Buffer` 生命周期的运行时安全检查，用于在开发和测试阶段更早暴露误用。
+- `Scope` 一旦 `Close()`，后续再调用 `GetHeapBuffer`、`NewBuffer`、`NewNativeBuffer` 或 `GetNativeBuffer` 都会直接 panic，避免新增资源脱离回收路径。
 
 ### log
 

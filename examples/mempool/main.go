@@ -13,12 +13,17 @@ func main() {
 	opts := mempool.DefaultOptions()
 	opts.Stats = stats
 	pool := mempool.New(opts)
-	buf := pool.Get(1500)
-	copy(buf, []byte("hello mempool"))
+	heap := mempool.NewHeapBuffer(pool, 32)
+	defer heap.Release()
+	heap.Reset()
+	heap.Append([]byte("hello mempool"))
 
-	fmt.Printf("len=%d cap=%d prefix=%q\n", len(buf), cap(buf), string(buf[:13]))
+	fmt.Printf("heap-len=%d heap-cap=%d text=%q\n", heap.Len(), heap.Cap(), string(heap.Bytes()))
 
-	pool.Put(buf)
+	raw := pool.Get(1500)
+	copy(raw, []byte("raw-bytes"))
+	fmt.Printf("raw-len=%d raw-cap=%d\n", len(raw), cap(raw))
+	pool.Put(raw)
 
 	text, err := stats.GatherText()
 	if err != nil {
