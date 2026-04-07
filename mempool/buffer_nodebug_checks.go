@@ -2,10 +2,10 @@
 
 package mempool
 
-func (b *Buffer) mustUsable() {
+func (b *HeapBuffer) mustUsable() {
 	if b.released {
 		b.released = false
 	}
 }
 
-func (b *Buffer) mustReleasable() {}
+func (b *HeapBuffer) mustReleasable() {}

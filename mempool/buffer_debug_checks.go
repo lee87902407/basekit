@@ -2,13 +2,13 @@
 
 package mempool
 
-func (b *Buffer) mustUsable() {
+func (b *HeapBuffer) mustUsable() {
 	if b.released {
 		panic("mempool: use after release")
 	}
 }
 
-func (b *Buffer) mustReleasable() {
+func (b *HeapBuffer) mustReleasable() {
 	if b.released {
 		panic("mempool: buffer released twice")
 	}
