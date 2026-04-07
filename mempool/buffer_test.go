@@ -9,7 +9,7 @@ import (
 
 func TestBufferReleaseReturnsToPoolOnce(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 1000)
+	b := NewHeapBuffer(pool, 1000)
 
 	b.Append([]byte("abc"))
 	b.Release()
@@ -21,7 +21,7 @@ func TestBufferReleaseReturnsToPoolOnce(t *testing.T) {
 
 func TestBufferReleaseTwicePanics(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 32)
+	b := NewHeapBuffer(pool, 32)
 	b.Release()
 
 	defer func() {
@@ -35,7 +35,7 @@ func TestBufferReleaseTwicePanics(t *testing.T) {
 
 func TestBufferUseAfterReleasePanics(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 32)
+	b := NewHeapBuffer(pool, 32)
 	b.Release()
 
 	defer func() {
@@ -49,7 +49,7 @@ func TestBufferUseAfterReleasePanics(t *testing.T) {
 
 func TestBufferAppendGrowsThroughPoolWhenCapacityInsufficient(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 510)
+	b := NewHeapBuffer(pool, 510)
 	b.Reset()
 	b.Append(bytes.Repeat([]byte{'a'}, 510))
 
@@ -79,7 +79,7 @@ func TestBufferAppendGrowsThroughPoolWhenCapacityInsufficient(t *testing.T) {
 
 func TestBufferAppendByteGrowsThroughPoolWhenCapacityInsufficient(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 1)
+	b := NewHeapBuffer(pool, 1)
 	b.Reset()
 	for i := 0; i < 600; i++ {
 		b.AppendByte('a')
@@ -98,7 +98,7 @@ func TestBufferAppendByteGrowsThroughPoolWhenCapacityInsufficient(t *testing.T) 
 
 func TestBufferCloneCreatesDetachedCopy(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 10)
+	b := NewHeapBuffer(pool, 10)
 	b.Reset()
 	b.Append([]byte("hello"))
 
@@ -112,7 +112,7 @@ func TestBufferCloneCreatesDetachedCopy(t *testing.T) {
 
 func TestBufferEnsureCapacity(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 16)
+	b := NewHeapBuffer(pool, 16)
 	b.Reset()
 	b.Append([]byte("abc"))
 	b.EnsureCapacity(900)

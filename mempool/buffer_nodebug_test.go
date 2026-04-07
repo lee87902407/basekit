@@ -6,7 +6,7 @@ import "testing"
 
 func TestBufferReleaseTwiceIgnoredWithoutDebug(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 32)
+	b := NewHeapBuffer(pool, 32)
 	b.Release()
 
 	b.Release()
@@ -14,7 +14,7 @@ func TestBufferReleaseTwiceIgnoredWithoutDebug(t *testing.T) {
 
 func TestBufferUseAfterReleaseIgnoredWithoutDebug(t *testing.T) {
 	pool := New(DefaultOptions())
-	b := NewBuffer(pool, 32)
+	b := NewHeapBuffer(pool, 32)
 	b.Release()
 
 	b.AppendByte('x')
