@@ -7,24 +7,28 @@ type Scope struct {
 	closed  bool
 }
 
+func (s *Scope) mustOpen() {
+	if s.closed {
+		panic("mempool: scope already closed")
+	}
+}
+
 func NewScope(pool BytePool) *Scope {
 	return &Scope{pool: pool}
 }
 
-func (s *Scope) Get(size int) []byte {
+func (s *Scope) GetHeapBuffer(size int) []byte {
+	s.mustOpen()
 	buf := s.pool.Get(size)
 	s.raws = append(s.raws, buf)
 	return buf
 }
 
-func (s *Scope) NewBuffer(size int) *Buffer {
-	b := NewBuffer(s.pool, size)
+func (s *Scope) NewBuffer(size int) *HeapBuffer {
+	s.mustOpen()
+	b := NewHeapBuffer(s.pool, size)
 	s.buffers = append(s.buffers, b)
 	return b
-}
-
-func (s *Scope) Track(buf []byte) {
-	s.raws = append(s.raws, buf)
 }
 
 func (s *Scope) Close() {

@@ -3,7 +3,44 @@ package mempool
 import "testing"
 
 func TestBufferImplementsBufferLifecycle(t *testing.T) {
-	var _ bufferLifecycle = (*Buffer)(nil)
+	var _ Buffer = (*HeapBuffer)(nil)
+	var _ bufferLifecycle = (*HeapBuffer)(nil)
+}
+
+func TestHeapBufferType(t *testing.T) {
+	pool := New(DefaultOptions())
+	b := NewHeapBuffer(pool, 16)
+
+	if b.Type() != BufferTypeHeap {
+		t.Fatalf("buffer type = %d, want %d", b.Type(), BufferTypeHeap)
+	}
+
+	b.Release()
+}
+
+func TestScopeUseAfterClosePanics(t *testing.T) {
+	pool := New(DefaultOptions())
+	scope := NewScope(pool)
+	scope.Close()
+
+	tests := []struct {
+		name string
+		fn   func()
+	}{
+		{name: "GetHeapBuffer", fn: func() { scope.GetHeapBuffer(1) }},
+		{name: "NewBuffer", fn: func() { scope.NewBuffer(1) }},
+	}
+
+	for i := range tests {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("expected panic for %s", tests[i].name)
+				}
+			}()
+			tests[i].fn()
+		}()
+	}
 }
 
 func TestScopeCloseReleasesTrackedBuffers(t *testing.T) {
@@ -26,7 +63,7 @@ func TestScopeCloseReleasesTrackedBuffers(t *testing.T) {
 func TestScopeCloseReleasesTrackedRawBuffers(t *testing.T) {
 	pool := New(DefaultOptions())
 	scope := NewScope(pool)
-	raw := scope.Get(1000)
+	raw := scope.GetHeapBuffer(1000)
 	scope.Close()
 
 	got := pool.Get(900)
