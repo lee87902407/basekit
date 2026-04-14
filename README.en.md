@@ -6,7 +6,7 @@
 
 ## Current Status
 
-The repository now includes formal modules `mempool` and `log`, and additional foundational modules will be added incrementally.
+The repository now includes formal modules `mempool`, `log`, and `utils`, and additional foundational modules will be added incrementally.
 
 ## Structure
 
@@ -64,6 +64,27 @@ Behavior notes:
 - `Init` is allowed to succeed only once; repeated calls return an error.
 - If business code calls `Debug` / `Info` / `Warn` / `Error` before `Init`, the module falls back to a default console logger instead of dropping the logs.
 - Console output uses a text encoder, file output uses a JSON encoder, and both are active together in dual-output mode.
+
+### utils
+
+`utils` is a collection of utility functions providing common string/byte slice operations, designed for high-frequency lightweight conversion scenarios. It supports:
+
+- ASCII field string case conversion (only accepts `[A-Za-z_.]` characters)
+- Fast random string generation (non-cryptographically secure)
+- Zero-copy string/byte slice conversion (unsafe operations)
+- Big-endian byte slice increment
+
+Links:
+
+- Example doc: [`docs/examples/utils.md`](./docs/examples/utils.md)
+- Example code: [`examples/utils/`](./examples/utils/)
+
+Behavior notes:
+
+- `UpperASCIIFieldString` / `LowerASCIIFieldString` only accept letters, underscores, and dots; they return an empty string when encountering illegal characters (including digits).
+- `FastRandomString` uses a non-cryptographically secure random generator and must not be used for security-sensitive strings.
+- `UnsafeStringToBytes` returns a slice sharing memory with the original string; callers must ensure the returned slice is never modified.
+- `IncrementByteSlice` increments in big-endian order and returns an all-zero slice on overflow.
 
 ## Maintenance Rules
 

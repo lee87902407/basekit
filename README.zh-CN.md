@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-当前仓库已落地正式主模块 `mempool` 与 `log`，后续其他基础能力会按主模块逐步加入。
+当前仓库已落地正式主模块 `mempool`、`log` 与 `utils`，后续其他基础能力会按主模块逐步加入。
 
 ## 目录说明
 
@@ -64,6 +64,27 @@
 - `Init` 只允许成功一次，重复调用会返回错误。
 - 如果业务在 `Init` 前调用 `Debug` / `Info` / `Warn` / `Error`，模块会退化为默认控制台 logger，而不是直接丢日志。
 - 控制台输出使用文本格式，文件输出使用 JSON 格式；双输出模式下二者同时生效。
+
+### utils
+
+`utils` 是一个通用工具函数集合，提供常用的字符串/字节切片操作工具，适用于高频轻量级转换场景，支持：
+
+- ASCII 字段字符串大小写转换（仅接受 `[A-Za-z_.]` 字符）
+- 快速随机字符串生成（非密码学安全）
+- 零拷贝字符串/字节切片互转（unsafe 操作）
+- 大端序字节切片自增操作
+
+相关入口：
+
+- 示例文档：[`docs/examples/utils.md`](./docs/examples/utils.md)
+- 示例代码：[`examples/utils/`](./examples/utils/)
+
+行为说明：
+
+- `UpperASCIIFieldString` / `LowerASCIIFieldString` 仅接受字母、下划线和点号，遇到非法字符（包括数字）时返回空字符串。
+- `FastRandomString` 使用非密码学安全的随机数生成器，不应用于生成安全敏感的随机字符串。
+- `UnsafeStringToBytes` 返回的切片与原字符串共享底层内存，调用者必须确保不会修改返回的切片。
+- `IncrementByteSlice` 按大端序自增，溢出时返回全零切片。
 
 ## 文档维护规则
 
