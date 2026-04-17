@@ -114,7 +114,7 @@ func UnsafeStringToBytes(s string) []byte {
 
 // BytesToString 高效地将 []byte 转换为 string（零拷贝）
 // 注意：返回的 string 与原 []byte 共享底层内存，调用者必须确保在使用期间原 []byte 不会被修改
-func BytesToString(b []byte) string {
+func UnsafeBytesToString(b []byte) string {
 	if len(b) == 0 {
 		return ""
 	}

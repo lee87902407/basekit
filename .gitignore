@@ -8,3 +8,4 @@ coverage/
 target/
 tmp/
 *.log
+.worktrees/
