@@ -7,23 +7,17 @@ import (
 )
 
 func main() {
-	stats := mempool.NewPrometheusStats()
-	defer stats.Close()
+	pool := mempool.New(mempool.DefaultOptions())
+	scope := mempool.NewScope(pool)
+	defer scope.Close()
 
-	opts := mempool.DefaultOptions()
-	opts.Stats = stats
-	pool := mempool.New(opts)
-	buf := pool.Get(1500)
-	copy(buf, []byte("hello mempool"))
+	// 创建 WriterBuffer 并写入数据
+	w := scope.NewWriterBuffer(32)
+	w.Reset()
+	w.Append([]byte("hello mempool"))
 
-	fmt.Printf("len=%d cap=%d prefix=%q\n", len(buf), cap(buf), string(buf[:13]))
+	// 转移所有权到 ReaderBuffer
+	r := w.ToReaderBuffer()
 
-	pool.Put(buf)
-
-	text, err := stats.GatherText()
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(text)
+	fmt.Printf("len=%d cap=%d text=%q\n", r.Len(), r.Cap(), string(r.Bytes()))
 }

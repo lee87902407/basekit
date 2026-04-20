@@ -61,7 +61,7 @@ func UpperASCIIFieldString(op []byte) string {
 			result[i] = b
 		}
 	}
-	return BytesToString(result)
+	return UnsafeBytesToString(result)
 }
 
 // LowerASCIIFieldString 将 ASCII 字段字符串转换为小写形式
@@ -80,7 +80,7 @@ func LowerASCIIFieldString(op []byte) string {
 			result[i] = b
 		}
 	}
-	return BytesToString(result)
+	return UnsafeBytesToString(result)
 }
 
 // UpperASCIIFieldByte 返回单个字节的大写映射
@@ -100,7 +100,7 @@ func FastRandomString(n int) string {
 		result[i] = asciiRandomBytes[randomSource.Intn(len(asciiRandomBytes))]
 	}
 	randomMu.Unlock()
-	return BytesToString(result)
+	return UnsafeBytesToString(result)
 }
 
 // UnsafeStringToBytes 高效地将 string 转换为 []byte（零拷贝）
@@ -112,7 +112,7 @@ func UnsafeStringToBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
-// BytesToString 高效地将 []byte 转换为 string（零拷贝）
+// UnsafeBytesToString 高效地将 []byte 转换为 string（零拷贝）
 // 注意：返回的 string 与原 []byte 共享底层内存，调用者必须确保在使用期间原 []byte 不会被修改
 func UnsafeBytesToString(b []byte) string {
 	if len(b) == 0 {

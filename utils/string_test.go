@@ -320,7 +320,7 @@ func TestFastRandomStringReturnsEmptyForNonPositiveLength(t *testing.T) {
 	}
 }
 
-func TestUnsafeStringToBytesAndBytesToString(t *testing.T) {
+func TestUnsafeStringToBytesAndUnsafeBytesToString(t *testing.T) {
 	// 测试基本转换
 	original := "hello world"
 
@@ -331,9 +331,9 @@ func TestUnsafeStringToBytesAndBytesToString(t *testing.T) {
 	}
 
 	// Bytes -> String
-	result := BytesToString(bytes)
+	result := UnsafeBytesToString(bytes)
 	if result != original {
-		t.Errorf("BytesToString 结果错误: got %q, want %q", result, original)
+		t.Errorf("UnsafeBytesToString 结果错误: got %q, want %q", result, original)
 	}
 
 	// 测试空字符串
@@ -342,15 +342,15 @@ func TestUnsafeStringToBytesAndBytesToString(t *testing.T) {
 		t.Errorf("UnsafeStringToBytes(空字符串) 长度错误: got %d, want 0", len(emptyBytes))
 	}
 
-	emptyResult := BytesToString(emptyBytes)
+	emptyResult := UnsafeBytesToString(emptyBytes)
 	if emptyResult != "" {
-		t.Errorf("BytesToString(空切片) 结果错误: got %q, want 空字符串", emptyResult)
+		t.Errorf("UnsafeBytesToString(空切片) 结果错误: got %q, want 空字符串", emptyResult)
 	}
 
 	// 测试特殊字符
 	special := "a_b.cXYZ"
 	specialBytes := UnsafeStringToBytes(special)
-	specialResult := BytesToString(specialBytes)
+	specialResult := UnsafeBytesToString(specialBytes)
 	if specialResult != special {
 		t.Errorf("特殊字符转换错误: got %q, want %q", specialResult, special)
 	}

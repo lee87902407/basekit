@@ -68,10 +68,10 @@ func main() {
 	fmt.Println("警告: 返回的 []byte 与原字符串共享内存，禁止修改")
 	fmt.Println()
 
-	// 6. BytesToString 示例
-	fmt.Println("--- BytesToString ---")
+	// 6. UnsafeBytesToString 示例
+	fmt.Println("--- UnsafeBytesToString ---")
 	data := []byte{'G', 'o', 'l', 'a', 'n', 'g'}
-	result := utils.BytesToString(data)
+	result := utils.UnsafeBytesToString(data)
 	fmt.Printf("字节切片: %v\n", data)
 	fmt.Printf("转换后: %q\n", result)
 	fmt.Println("警告: 返回的 string 与原 []byte 共享内存，使用期间禁止修改原切片")

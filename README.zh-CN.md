@@ -26,9 +26,9 @@
 
 - 512KB 以内 bucket 化复用
 - 超限对象直接分配、归还丢弃
-- `Buffer` 包装对象
+- `WriterBuffer`/`ReaderBuffer` 双类型模型
 - `Scope` 请求级统一释放
-- `debug` 构建标签下的 `Buffer` 误用检查
+- `debug` 构建标签下的误用检查
 
 相关入口：
 
@@ -38,8 +38,11 @@
 
 行为说明：
 
-- 默认构建下，`Buffer` 不会对 `use after release` 或重复 `Release` 做 panic 检查；如果释放后又继续使用，会自动恢复为可继续托管、可被后续 `Scope.Close()` 回收的状态。
-- 使用 `go test -tags debug ./...`、`go build -tags debug ./...` 等方式加入 `debug` 标签时，会启用 `Buffer` 的运行时安全检查，用于在开发和测试阶段更早暴露误用。
+- `WriterBuffer` 由 `Scope.NewWriterBuffer()` 创建，负责写阶段的追加、扩容、重置与构建。
+- `ReaderBuffer` 由 `WriterBuffer.ToReaderBuffer()` 产生，提供弱只读访问；`Bytes()` 直接返回底层 `[]byte`，调用者不得修改返回的切片内容。
+- `ToReaderBuffer()` 会把底层 `[]byte` 的所有权从 writer 转移给 reader，转换完成后原 `WriterBuffer` 立即失效，访问会触发 panic。
+- buffer 的底层内存统一由 `Scope.Close()` 归还，不再对外暴露公开 `Release()`；`Scope.Close()` 后所有相关缓冲区均失效，访问会触发 panic。
+- 使用 `go test -tags debug ./...` 或 `go build -tags debug ./...` 时，会启用额外的运行时安全检查，用于在开发和测试阶段更早暴露误用。
 
 ### log
 

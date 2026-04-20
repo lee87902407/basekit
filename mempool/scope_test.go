@@ -2,16 +2,16 @@ package mempool
 
 import "testing"
 
-func TestScopeCloseReleasesTrackedBuffers(t *testing.T) {
+func TestScopeCloseReleasesTrackedWriterBuffers(t *testing.T) {
 	pool := New(DefaultOptions())
 	scope := NewScope(pool)
-	b1 := scope.NewBuffer(100)
-	b2 := scope.NewBuffer(200)
+	w1 := scope.NewWriterBuffer(100)
+	w2 := scope.NewWriterBuffer(200)
 
 	scope.Close()
 
-	if !b1.Released() || !b2.Released() {
-		t.Fatal("tracked buffers should be released on Close")
+	if !w1.Released() || !w2.Released() {
+		t.Fatal("tracked writer buffers should be released on Close")
 	}
 }
 
@@ -25,4 +25,43 @@ func TestScopeCloseReleasesTrackedRawBuffers(t *testing.T) {
 	if cap(got) != cap(raw) {
 		t.Fatalf("cap(got) = %d, want %d", cap(got), cap(raw))
 	}
+}
+
+func TestScopeNewWriterBufferAfterClosePanics(t *testing.T) {
+	pool := New(DefaultOptions())
+	scope := NewScope(pool)
+	scope.Close()
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic on NewWriterBuffer after Close")
+		}
+	}()
+	scope.NewWriterBuffer(32)
+}
+
+func TestScopeGetAfterClosePanics(t *testing.T) {
+	pool := New(DefaultOptions())
+	scope := NewScope(pool)
+	scope.Close()
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic on Get after Close")
+		}
+	}()
+	scope.Get(32)
+}
+
+func TestScopeTrackAfterClosePanics(t *testing.T) {
+	pool := New(DefaultOptions())
+	scope := NewScope(pool)
+	scope.Close()
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic on Track after Close")
+		}
+	}()
+	scope.Track(make([]byte, 10))
 }

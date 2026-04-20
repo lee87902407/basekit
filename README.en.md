@@ -26,7 +26,7 @@ The repository now includes formal modules `mempool`, `log`, and `utils`, and ad
 
 - bucketed reuse up to 512KB
 - exact allocation and drop-on-put for oversized buffers
-- optional `Buffer` wrapper objects
+- `WriterBuffer`/`ReaderBuffer` dual-type model
 - request-scoped batch cleanup through `Scope`
 - optional runtime misuse checks behind the `debug` build tag
 
@@ -38,8 +38,11 @@ Links:
 
 Behavior notes:
 
-- In the default build, `Buffer` does not panic on use-after-release or double-release checks; if it is used again after release, it automatically becomes managed again so a later `Scope.Close()` can still reclaim it.
-- When built or tested with `-tags debug`, `Buffer` enables runtime safety checks so misuse can fail fast during development and verification.
+- `WriterBuffer` is created by `Scope.NewWriterBuffer()` and handles write-phase operations like append, resize, and reset.
+- `ReaderBuffer` is produced by `WriterBuffer.ToReaderBuffer()` and provides weak read-only access; `Bytes()` exposes the underlying `[]byte` directly and callers must not mutate it.
+- `ToReaderBuffer()` transfers ownership of the underlying `[]byte` from writer to reader; the original `WriterBuffer` becomes invalid immediately after transfer and any access panics.
+- Buffer memory is released uniformly by `Scope.Close()`; there is no public `Release()` method. After `Scope.Close()`, all associated buffers become invalid and any access panics.
+- When built or tested with `-tags debug`, extra runtime safety checks are enabled to catch misuse earlier during development and verification.
 
 ### log
 

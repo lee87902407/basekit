@@ -9,17 +9,40 @@
 3. 超过 `512KB` 的请求直接申请精确大小的 `[]byte`，归还时直接丢弃。
 4. `mempool` 保持底层能力定位：
    - 提供 `BytePool`
-   - 提供轻量 `Buffer`
+   - 提供 `WriterBuffer`/`ReaderBuffer` 双类型模型
    - 提供请求级 `Scope`
-5. 轻量 buffer 工具方法直接放在 `mempool/buffer.go` 中。
+5. `WriterBuffer` 写接口放在 `mempool/writer_buffer.go` 中，`ReaderBuffer` 只读接口放在 `mempool/reader_buffer.go` 中。
 6. 完整 `ByteBuffer` 风格工具集不放入 `mempool`，未来应独立为更高层的基础封装模块。
+
+## 双类型模型
+
+`mempool` 采用显式双类型模型管理缓冲区生命周期：
+
+### WriterBuffer
+
+- 由 `Scope.NewWriterBuffer(size)` 创建，纳入 Scope 管理。
+- 负责写阶段的追加、扩容、重置与构建。
+- 提供 `Reset`、`Resize`、`EnsureCapacity`、`Append`、`AppendByte`、`Clone`、`DetachedCopy` 方法。
+- 通过 `ToReaderBuffer()` 转移底层 `[]byte` 所有权到 `ReaderBuffer`，转移后 writer 立即失效。
+
+### ReaderBuffer
+
+- 由 `WriterBuffer.ToReaderBuffer()` 产生，纳入 Scope 管理。
+- 只保留只读能力：`Bytes`、`Len`、`Cap`、`Released`、`Clone`、`DetachedCopy`。
+- `Bytes()` 是弱只读，直接返回底层 `[]byte`，调用者不应修改返回的切片内容。
+
+### Scope 统一释放
+
+- `Scope.Close()` 统一释放所有由该 Scope 管理的 `WriterBuffer`、`ReaderBuffer` 和裸 `[]byte`。
+- 不再对外暴露公开 `Release()` 方法。
+- debug 与非 debug 构建下，已释放的缓冲区对象均不可继续使用，访问会触发 panic。
 
 ## 当前实现边界
 
 ### 已实现
 
 1. `BytePool` 接口与 `BucketedPool` 默认实现。
-2. `Buffer` 的轻量能力：
+2. `WriterBuffer` 的写阶段能力：
    - `Reset`
    - `Resize`
    - `EnsureCapacity`
@@ -27,9 +50,17 @@
    - `AppendByte`
    - `Clone`
    - `DetachedCopy`
-   - `Release`
-3. `Scope` 的统一释放能力。
-4. Prometheus 兼容指标输出。
+   - `ToReaderBuffer`
+3. `ReaderBuffer` 的只读能力：
+   - `Bytes`
+   - `Len`
+   - `Cap`
+   - `Released`
+   - `Clone`
+   - `DetachedCopy`
+4. `Scope` 的统一释放能力。
+5. debug / non-debug 构建标签下的失效检查。
+6. Prometheus 兼容指标输出。
 
 ### 未纳入当前模块
 
@@ -56,4 +87,4 @@
 
 - 对 `mempool` 的完整上层封装
 - 对其他基础模块的组合封装
-- 更偏向“基础设施聚合层”，而不是“底层池化层”
+- 更偏向"基础设施聚合层"，而不是"底层池化层"
