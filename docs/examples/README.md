@@ -20,7 +20,7 @@
 
 当前已存在正式主模块示例文档：
 
-- [`mempool.md`](./mempool.md)：`mempool` 模块的设计背景、使用场景、最小示例与注意事项。
+- [`mempool.md`](./mempool.md)：`mempool` 模块当前 `Scope` / `WriterBuffer` / `ReaderBuffer` API 的最小示例、接口说明与接入注意事项。
 - [`log.md`](./log.md)：`log` 模块的初始化方式、输出模式、最小示例与接入注意事项。
 - [`utils.md`](./utils.md)：`utils` 模块的各工具函数用途、使用场景、安全注意事项与最小示例。
 

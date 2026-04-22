@@ -3,8 +3,6 @@ package mempool
 type Options struct {
 	Buckets      []int
 	MaxPooledCap int
-	ZeroOnPut    bool
-	ZeroOnGet    bool
 	Stats        StatsCollector
 }
 

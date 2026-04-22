@@ -13,14 +13,14 @@
 
 ## 轻量 buffer 模型
 
-`mempool` 区分两个缓冲区对象：
+`mempool` 当前区分两个缓冲区对象：
 
-1. **`WriterBuffer`**：由 `Scope.NewWriterBuffer()` 创建，负责写阶段的追加、扩容、重置与构建。
-2. **`ReaderBuffer`**：由 `WriterBuffer.ToReaderBuffer()` 产生，提供弱只读访问；`Bytes()` 直接返回底层 `[]byte`，调用者不得修改返回的切片内容。
+1. **`WriterBuffer`**：由 `scope.NewWriterBuffer()` 创建，负责写阶段的追加与重置。
+2. **`ReaderBuffer`**：由 `scope.ToReaderBuffer(w)` 产生，只提供长度与容量信息，不暴露底层字节切片。
 
-`ToReaderBuffer()` 会把底层 `[]byte` 的所有权从 writer 转移给 reader。转换完成后，原 `WriterBuffer` 立即失效，访问会触发 panic。
+`scope.ToReaderBuffer(w)` 会把底层 `[]byte` 的所有权从 writer 转移给 reader。转换完成后，原 `WriterBuffer` 不应再继续用于写入。
 
-buffer 的底层内存统一由 `Scope.Close()` 归还，不再对外暴露公开 `Release()`。`Scope.Close()` 后所有相关缓冲区均失效，访问会触发 panic。
+buffer 的底层内存统一由 `Scope.Close()` 归还，不再对外暴露公开 `Release()`。
 
 ## 最小可运行示例
 
@@ -35,43 +35,43 @@ import (
 
 func main() {
 	pool := mempool.New(mempool.DefaultOptions())
-	scope := mempool.NewScope(pool)
+	scope := pool.NewScope()
 	defer scope.Close()
 
-	// 创建 WriterBuffer 并写入数据
-	w := scope.NewWriterBuffer(32)
-	w.Reset()
+	// WriterBuffer 不会自动扩容，容量需要按写入量预估。
+	w := scope.NewWriterBuffer(len("hello mempool"))
 	w.Append([]byte("hello mempool"))
+	fmt.Printf("writer len=%d cap=%d\n", w.Len(), w.Cap())
 
-	// 转移所有权到 ReaderBuffer
-	r := w.ToReaderBuffer()
+	// 转移所有权到 ReaderBuffer，后续统一由 scope.Close() 归还。
+	r := scope.ToReaderBuffer(w)
 
-	fmt.Printf("len=%d cap=%d text=%q\n", r.Len(), r.Cap(), string(r.Bytes()))
+	fmt.Printf("reader len=%d cap=%d\n", r.Len(), r.Cap())
 }
 ```
 
 ## WriterBuffer 写接口
 
-当前 `WriterBuffer` 提供以下写阶段方法：
+当前 `WriterBuffer` 提供以下公开方法：
 
-1. `Reset()`：保留容量，仅重置长度。
-2. `Resize(n int)`：将缓冲区长度调整为 n。
-3. `EnsureCapacity(additional int)`：在追加前确保底层容量足够，不够时通过池重新获取并迁移数据。
-4. `Append([]byte)` / `AppendByte(byte)`：先做受控扩容，再执行写入。
-5. `Clone() []byte`：返回当前内容的独立副本。
-6. `DetachedCopy() []byte`：语义与 Clone 一致。
-7. `ToReaderBuffer() *ReaderBuffer`：转移所有权到只读缓冲区。
+1. `Bytes() []byte`：返回当前底层字节切片。
+1. `Len() int`：返回当前长度。
+2. `Cap() int`：返回创建时声明的容量。
+3. `Reset()`：保留底层数组，仅重置长度与写入位置。
+4. `Append([]byte)`：追加一段字节；若超出剩余容量会直接 panic。
+5. `AppendByte(byte)`：追加单个字节；若超出剩余容量会直接 panic。
+6. `CloneByBuffer() *WriterBuffer`：在同一 `Scope` 下创建当前内容的独立副本。
+
+`WriterBuffer` 当前**不会自动扩容**。如果写入数据量超过创建时申请的容量，`Append` / `AppendByte` 会直接触发 `panic("mempool: buffer overflow")`。
 
 ## ReaderBuffer 只读接口
 
 `ReaderBuffer` 提供以下只读方法：
 
-1. `Bytes() []byte`：返回底层字节切片（弱只读，直接返回底层 `[]byte`）。
-2. `Len() int`：返回缓冲区长度。
-3. `Cap() int`：返回缓冲区容量。
-4. `Released() bool`：返回缓冲区是否已释放。
-5. `Clone() []byte`：返回当前内容的独立副本。
-6. `DetachedCopy() []byte`：语义与 Clone 一致。
+1. `Len() int`：返回缓冲区长度。
+2. `Cap() int`：返回底层切片容量。
+
+当前 `ReaderBuffer` 不提供 `Bytes()`、`Clone()`、`DetachedCopy()` 等接口。如需读取具体内容，应在转为 `ReaderBuffer` 之前自行拷贝或消费 `WriterBuffer.Bytes()` 返回的数据。
 
 ## 接入注意事项
 
@@ -79,31 +79,20 @@ func main() {
 2. 超过 `512KB` 的请求会直接分配精确大小的 `[]byte`，归还时直接丢弃，不进入池。
 3. `Put` 按 `cap(buf)` 判断归属 bucket，而不是按 `len(buf)`。
 4. buffer 在跨异步边界或跨 cgo 生命周期时，必须确认 ownership 后才能归还。
-5. `WriterBuffer.ToReaderBuffer()` 之后原 writer 立即失效，不能再调用任何方法。
-6. `ReaderBuffer.Bytes()` 是弱只读，直接返回底层 `[]byte`，调用者不应修改返回的切片内容。
-7. `Append` / `AppendByte` 不依赖 Go 内置 `append` 的隐式扩容，而是优先走池化扩容策略。
-8. debug 与非 debug 构建下，已释放的缓冲区对象均不可继续使用，访问会触发 panic。
+5. `Scope` 通过 `pool.NewScope()` 创建，不提供 `mempool.NewScope(...)` 这类包级构造函数。
+6. `scope.ToReaderBuffer(w)` 之后，不应再把 `w` 当作可写缓冲区继续使用。
+7. `Append` / `AppendByte` 不会触发自动扩容；容量不足会直接 panic，因此创建 `WriterBuffer` 时要预估好容量。
+8. `WriterBuffer.Len()` / `Cap()` 与 `ReaderBuffer.Len()` / `Cap()` 可视为读操作；对象在所有权转移或 `Scope.Close()` 后，这些读取结果可能表现为 `nil`、`0` 或静默返回，文档不应假定“所有访问都会 panic”。
 
 ## 失效对象行为
 
-无论是 debug 还是非 debug 构建，以下行为均会触发 panic：
+以下行为应视为误用：
 
-1. `WriterBuffer` 在 `ToReaderBuffer()` 之后继续调用任何方法。
-2. `ReaderBuffer` 在 `Scope.Close()` 之后继续调用任何方法。
-3. `WriterBuffer` 在 `Scope.Close()` 之后继续调用任何方法。
+1. `WriterBuffer` 在 `scope.ToReaderBuffer(w)` 之后继续写入。
+2. `ReaderBuffer` 在 `Scope.Close()` 之后继续依赖其容量或长度信息。
+3. `WriterBuffer` 在 `Scope.Close()` 之后继续写入。
 
-即：已释放或已失效的缓冲区对象在任何构建模式下都不可继续使用。
-
-## debug 构建检查
-
-在排查 buffer 误用时，可以显式开启 `debug` 构建标签：
-
-```bash
-go test -tags debug ./mempool
-go test -tags debug ./...
-```
-
-`debug` 标签的价值在于提供更早、更丰富的误用暴露，而非让失效对象 panic 成为 debug 专属行为。
+当前实现下，写操作误用更容易暴露为 panic；读操作则可能只返回 `nil`、`0` 或静默成功。调用方应在生命周期边界前完成消费，不要依赖失效后的具体表现。
 
 ## 与 README 的跳转关系
 

@@ -8,16 +8,16 @@ import (
 
 func main() {
 	pool := mempool.New(mempool.DefaultOptions())
-	scope := mempool.NewScope(pool)
+	scope := pool.NewScope()
 	defer scope.Close()
 
-	// 创建 WriterBuffer 并写入数据
-	w := scope.NewWriterBuffer(32)
-	w.Reset()
+	// WriterBuffer 不自动扩容，容量需要按写入量预估。
+	w := scope.NewWriterBuffer(len("hello mempool"))
 	w.Append([]byte("hello mempool"))
+	fmt.Printf("writer len=%d cap=%d\n", w.Len(), w.Cap())
 
-	// 转移所有权到 ReaderBuffer
-	r := w.ToReaderBuffer()
+	// 转移所有权到 ReaderBuffer，后续统一由 scope.Close() 归还。
+	r := scope.ToReaderBuffer(w)
 
-	fmt.Printf("len=%d cap=%d text=%q\n", r.Len(), r.Cap(), string(r.Bytes()))
+	fmt.Printf("reader len=%d cap=%d\n", r.Len(), r.Cap())
 }
