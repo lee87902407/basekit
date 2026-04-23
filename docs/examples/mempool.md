@@ -54,35 +54,38 @@ func main() {
 
 当前 `WriterBuffer` 提供以下公开方法：
 
-1. `Bytes() []byte`：返回当前底层字节切片。
-1. `Len() int`：返回当前长度。
+1. `Len() int`：返回已写入的长度。
 2. `Cap() int`：返回创建时声明的容量。
-3. `Reset()`：保留底层数组，仅重置长度与写入位置。
-4. `Append([]byte)`：追加一段字节；若超出剩余容量会直接 panic。
-5. `AppendByte(byte)`：追加单个字节；若超出剩余容量会直接 panic。
-6. `CloneByBuffer() *WriterBuffer`：在同一 `Scope` 下创建当前内容的独立副本。
+3. `WriteBytes() int`：返回还能写入的大小。
+4. `Reset()`：保留底层数组，仅重置长度与写入位置。
+5. `Append([]byte)`：追加一段字节；若超出剩余容量会直接 panic。
+6. `AppendByte(byte)`：追加单个字节；若超出剩余容量会直接 panic。
 
 `WriterBuffer` 当前**不会自动扩容**。如果写入数据量超过创建时申请的容量，`Append` / `AppendByte` 会直接触发 `panic("mempool: buffer overflow")`。
+
+`WriterBuffer` 不提供 `Bytes()` 方法。如需读取具体内容，应在转为 `ReaderBuffer` 之前自行消费写入过程中的数据，或在转为 `ReaderBuffer` 后通过只读接口访问。
 
 ## ReaderBuffer 只读接口
 
 `ReaderBuffer` 提供以下只读方法：
 
-1. `Len() int`：返回缓冲区长度。
-2. `Cap() int`：返回底层切片容量。
+1. `Len() int`：返回缓冲区有效长度。
+2. `Cap() int`：返回缓冲区容量（与 Len 相同）。
+3. `ByteAt(i int) byte`：返回有效区间内第 i 个字节的只读访问；越界则 panic。
 
-当前 `ReaderBuffer` 不提供 `Bytes()`、`Clone()`、`DetachedCopy()` 等接口。如需读取具体内容，应在转为 `ReaderBuffer` 之前自行拷贝或消费 `WriterBuffer.Bytes()` 返回的数据。
+`ReaderBuffer` 是固定大小的只读视图，不提供 `Bytes()`、`Slice()`、`RemoveLast()` 等方法。
 
 ## 接入注意事项
 
 1. bucket 最大只到 `512KB`。
 2. 超过 `512KB` 的请求会直接分配精确大小的 `[]byte`，归还时直接丢弃，不进入池。
 3. `Put` 按 `cap(buf)` 判断归属 bucket，而不是按 `len(buf)`。
-4. buffer 在跨异步边界或跨 cgo 生命周期时，必须确认 ownership 后才能归还。
-5. `Scope` 通过 `pool.NewScope()` 创建，不提供 `mempool.NewScope(...)` 这类包级构造函数。
-6. `scope.ToReaderBuffer(w)` 之后，不应再把 `w` 当作可写缓冲区继续使用。
-7. `Append` / `AppendByte` 不会触发自动扩容；容量不足会直接 panic，因此创建 `WriterBuffer` 时要预估好容量。
-8. `WriterBuffer.Len()` / `Cap()` 与 `ReaderBuffer.Len()` / `Cap()` 可视为读操作；对象在所有权转移或 `Scope.Close()` 后，这些读取结果可能表现为 `nil`、`0` 或静默返回，文档不应假定“所有访问都会 panic”。
+4. `Scope.Get(n)` 在命中 bucket 时返回 `len=cap=bucket` 的 `[]byte`，不是 `len=n` 的逻辑窗口。
+5. buffer 在跨异步边界或跨 cgo 生命周期时，必须确认 ownership 后才能归还。
+6. `Scope` 通过 `pool.NewScope()` 创建，不提供 `mempool.NewScope(...)` 这类包级构造函数。
+7. `scope.ToReaderBuffer(w)` 之后，不应再把 `w` 当作可写缓冲区继续使用。
+8. `Append` / `AppendByte` 不会触发自动扩容；容量不足会直接 panic，因此创建 `WriterBuffer` 时要预估好容量。
+9. `WriterBuffer.Len()` / `Cap()` 与 `ReaderBuffer.Len()` / `Cap()` 可视为读操作；对象在所有权转移或 `Scope.Close()` 后，不应再依赖这些结果，也不要假定所有误用都会 panic。
 
 ## 失效对象行为
 
@@ -92,7 +95,7 @@ func main() {
 2. `ReaderBuffer` 在 `Scope.Close()` 之后继续依赖其容量或长度信息。
 3. `WriterBuffer` 在 `Scope.Close()` 之后继续写入。
 
-当前实现下，写操作误用更容易暴露为 panic；读操作则可能只返回 `nil`、`0` 或静默成功。调用方应在生命周期边界前完成消费，不要依赖失效后的具体表现。
+当前实现下，写操作误用更容易暴露为 panic；读操作和元数据访问不保证统一的失效表现。调用方应在生命周期边界前完成消费，不要依赖失效后的具体行为。
 
 ## 与 README 的跳转关系
 

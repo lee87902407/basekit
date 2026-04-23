@@ -95,11 +95,11 @@ func (p *BytePool) get(size int) []byte {
 	if v := class.Pool.Get(); v != nil {
 		buf := v.([]byte)
 		p.onGet(size, bucket, true)
-		return buf[:bucket]
+		return buf[:bucket:bucket] // 强制 len=cap=bucket，统一数组语义
 	}
 	buf := make([]byte, bucket)
 	p.onGet(size, bucket, false)
-	return buf[:bucket]
+	return buf // make 已保证 len=cap=bucket
 }
 
 func (p *BytePool) put(buf []byte) {

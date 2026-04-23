@@ -118,10 +118,12 @@ func TestPrometheusStatsExposeMetrics(t *testing.T) {
 
 	scope := pool.NewScope()
 	buf := scope.Get(1500)
-	if len(buf) != 1500 {
+	// 请求 1500，bucket 匹配到 2048，返回 len=cap=2048 的数组
+	if len(buf) != 2048 {
 		t.Fatalf("unexpected pooled length: %d", len(buf))
 	}
 	oversize := scope.Get(opts.MaxPooledCap + 1)
+	// 超出 maxPooledCap 的请求，直接分配请求大小，len=cap=请求大小
 	if len(oversize) != opts.MaxPooledCap+1 {
 		t.Fatalf("unexpected oversize length: %d", len(oversize))
 	}

@@ -21,21 +21,21 @@
 ### WriterBuffer
 
 - 由 `Scope.NewWriterBuffer(size)` 创建，纳入 Scope 管理。
-- 负责写阶段的追加、扩容、重置与构建。
-- 提供 `Reset`、`Resize`、`EnsureCapacity`、`Append`、`AppendByte`、`Clone`、`DetachedCopy` 方法。
-- 通过 `ToReaderBuffer()` 转移底层 `[]byte` 所有权到 `ReaderBuffer`，转移后 writer 立即失效。
+- 负责写阶段的追加与重置。
+- 当前公开方法以 `Len`、`Cap`、`WriteBytes`、`Reset`、`Append`、`AppendByte` 为主。
+- 通过 `Scope.ToReaderBuffer(w)` 转移底层 `[]byte` 所有权到 `ReaderBuffer`，转移后 writer 不应继续使用。
 
 ### ReaderBuffer
 
-- 由 `WriterBuffer.ToReaderBuffer()` 产生，纳入 Scope 管理。
-- 只保留只读能力：`Bytes`、`Len`、`Cap`、`Released`、`Clone`、`DetachedCopy`。
-- `Bytes()` 是弱只读，直接返回底层 `[]byte`，调用者不应修改返回的切片内容。
+- 由 `Scope.ToReaderBuffer(w)` 产生，纳入 Scope 管理。
+- 是固定大小的只读视图。
+- 当前公开方法以 `Len`、`Cap`、`ByteAt(i)` 为主，不暴露底层 `[]byte`。
 
 ### Scope 统一释放
 
 - `Scope.Close()` 统一释放所有由该 Scope 管理的 `WriterBuffer`、`ReaderBuffer` 和裸 `[]byte`。
 - 不再对外暴露公开 `Release()` 方法。
-- debug 与非 debug 构建下，已释放的缓冲区对象均不可继续使用，访问会触发 panic。
+- 生命周期结束后相关对象不应继续使用；当前实现不承诺所有误用路径都统一 panic。
 
 ## 当前实现边界
 
@@ -43,24 +43,18 @@
 
 1. `BytePool` 接口与 `BucketedPool` 默认实现。
 2. `WriterBuffer` 的写阶段能力：
-   - `Reset`
-   - `Resize`
-   - `EnsureCapacity`
-   - `Append`
-   - `AppendByte`
-   - `Clone`
-   - `DetachedCopy`
-   - `ToReaderBuffer`
-3. `ReaderBuffer` 的只读能力：
-   - `Bytes`
    - `Len`
    - `Cap`
-   - `Released`
-   - `Clone`
-   - `DetachedCopy`
+   - `WriteBytes`
+   - `Reset`
+   - `Append`
+   - `AppendByte`
+3. `ReaderBuffer` 的只读能力：
+   - `Len`
+   - `Cap`
+   - `ByteAt`
 4. `Scope` 的统一释放能力。
-5. debug / non-debug 构建标签下的失效检查。
-6. Prometheus 兼容指标输出。
+5. Prometheus 兼容指标输出。
 
 ### 未纳入当前模块
 

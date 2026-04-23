@@ -14,7 +14,7 @@
 
 ## 当前模块
 
-- `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，支持 `WriterBuffer`/`ReaderBuffer` 双类型模型、`Scope` 请求级批量释放，以及可选的 `debug` 构建期安全检查。
+- `mempool`：基于 `sync.Pool` 的 `[]byte` 分桶内存池，支持 `WriterBuffer`/`ReaderBuffer` 双类型模型与 `Scope` 请求级批量释放。
 - `log`：基于 `zap` 的全局单例日志封装，支持控制台 / 文件 / 双输出、运行时调级和未初始化阶段的控制台兜底输出。
 - `utils`：通用工具函数集合，提供 ASCII 字段大小写转换、快速随机字符串生成、零拷贝字符串/字节切片转换、大端序字节切片自增等工具方法。
 

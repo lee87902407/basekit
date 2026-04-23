@@ -28,7 +28,7 @@ The repository now includes formal modules `mempool`, `log`, and `utils`, and ad
 - exact allocation and drop-on-put for oversized buffers
 - `WriterBuffer`/`ReaderBuffer` dual-type model
 - request-scoped batch cleanup through `Scope`
-- optional runtime misuse checks behind the `debug` build tag
+- fixed-size `ReaderBuffer` read-only views and logical-capacity-controlled `WriterBuffer`
 
 Links:
 
@@ -38,11 +38,11 @@ Links:
 
 Behavior notes:
 
-- `WriterBuffer` is created by `Scope.NewWriterBuffer()` and handles write-phase operations like append, resize, and reset.
-- `ReaderBuffer` is produced by `WriterBuffer.ToReaderBuffer()` and provides weak read-only access; `Bytes()` exposes the underlying `[]byte` directly and callers must not mutate it.
-- `ToReaderBuffer()` transfers ownership of the underlying `[]byte` from writer to reader; the original `WriterBuffer` becomes invalid immediately after transfer and any access panics.
-- Buffer memory is released uniformly by `Scope.Close()`; there is no public `Release()` method. After `Scope.Close()`, all associated buffers become invalid and any access panics.
-- When built or tested with `-tags debug`, extra runtime safety checks are enabled to catch misuse earlier during development and verification.
+- `WriterBuffer` is created by `Scope.NewWriterBuffer()` and handles write-phase operations like append and reset; it does not provide a `Bytes()` method.
+- `ReaderBuffer` is produced by `Scope.ToReaderBuffer(w)` as a fixed-size read-only view, providing `Len()`, `Cap()`, and `ByteAt(i)` for read-only access without exposing the underlying `[]byte`.
+- `Scope.ToReaderBuffer(w)` transfers ownership of the underlying `[]byte` from writer to reader; the original `WriterBuffer` must not be used after the transfer.
+- Buffer memory is released uniformly by `Scope.Close()`; there is no public `Release()` method. After `Scope.Close()`, callers must not keep relying on the associated buffer objects.
+- The current implementation does not guarantee panic behavior for every invalid access path; callers should finish consuming data before lifecycle boundaries and must not rely on post-release behavior.
 
 ### log
 

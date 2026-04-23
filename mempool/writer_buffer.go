@@ -17,6 +17,11 @@ func (b *WriterBuffer) Cap() int {
 	return b.capacity
 }
 
+// Len 返回已写入的长度。
+func (b *WriterBuffer) Len() int {
+	return b.idx
+}
+
 // Reset 重置写入长度为零，保留底层数组。
 func (b *WriterBuffer) Reset() {
 	b.idx = 0

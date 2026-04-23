@@ -21,9 +21,11 @@ func (b *Scope) CloneByBuffer(buf *WriterBuffer) *WriterBuffer {
 	return dup
 }
 
+// CloneFromBytes 从字节切片创建 WriterBuffer。
+// capacity 使用 len(bytes)，不依赖隐藏的 cap(bytes)。
 func (b *Scope) CloneFromBytes(bytes []byte) *WriterBuffer {
-	var capacity = cap(bytes)
-	var buf = b.NewWriterBuffer(capacity)
+	capacity := len(bytes)
+	buf := b.NewWriterBuffer(capacity)
 	buf.Append(bytes)
 	return buf
 }

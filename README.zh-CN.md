@@ -28,7 +28,7 @@
 - 超限对象直接分配、归还丢弃
 - `WriterBuffer`/`ReaderBuffer` 双类型模型
 - `Scope` 请求级统一释放
-- `debug` 构建标签下的误用检查
+- `ReaderBuffer` 固定大小只读视图与 `WriterBuffer` 逻辑容量控制
 
 相关入口：
 
@@ -38,11 +38,11 @@
 
 行为说明：
 
-- `WriterBuffer` 由 `Scope.NewWriterBuffer()` 创建，负责写阶段的追加、扩容、重置与构建。
-- `ReaderBuffer` 由 `WriterBuffer.ToReaderBuffer()` 产生，提供弱只读访问；`Bytes()` 直接返回底层 `[]byte`，调用者不得修改返回的切片内容。
-- `ToReaderBuffer()` 会把底层 `[]byte` 的所有权从 writer 转移给 reader，转换完成后原 `WriterBuffer` 立即失效，访问会触发 panic。
-- buffer 的底层内存统一由 `Scope.Close()` 归还，不再对外暴露公开 `Release()`；`Scope.Close()` 后所有相关缓冲区均失效，访问会触发 panic。
-- 使用 `go test -tags debug ./...` 或 `go build -tags debug ./...` 时，会启用额外的运行时安全检查，用于在开发和测试阶段更早暴露误用。
+- `WriterBuffer` 由 `Scope.NewWriterBuffer()` 创建，负责写阶段的追加与重置；不提供 `Bytes()` 方法。
+- `ReaderBuffer` 由 `Scope.ToReaderBuffer(w)` 产生，是固定大小的只读视图，提供 `Len()`、`Cap()`、`ByteAt(i)` 等只读访问，不暴露底层 `[]byte`。
+- `Scope.ToReaderBuffer(w)` 会把底层 `[]byte` 的所有权从 writer 转移给 reader；转换完成后，原 `WriterBuffer` 不应再继续使用。
+- buffer 的底层内存统一由 `Scope.Close()` 归还，不再对外暴露公开 `Release()`；`Scope.Close()` 之后不应继续依赖相关缓冲区对象。
+- 当前实现不承诺失效对象在所有访问路径上都会 panic；调用方应在生命周期边界前完成消费，不要依赖失效后的具体表现。
 
 ### log
 
