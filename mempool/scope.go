@@ -39,19 +39,16 @@ func (s *Scope) ResetWriterBufferByCapacity(buf *WriterBuffer, capacity int) {
 		panic("invalid capacity")
 	}
 	if capacity < buf.idx {
-		buf.buf = buf.buf[:capacity]
 		buf.idx = capacity
 		buf.capacity = capacity
 		return
 	}
 	if capacity <= cap(buf.buf) {
-		buf.buf = buf.buf[:capacity]
 		buf.capacity = capacity
 		return
 	}
 
 	next := s.pool.get(capacity)
-	next = next[:capacity]
 	copy(next[:buf.idx], buf.buf[:buf.idx])
 	s.pool.put(buf.buf)
 	buf.buf = next

@@ -9,10 +9,16 @@ type ReaderBuffer struct {
 
 // Len 返回缓冲区长度。
 func (b *ReaderBuffer) Len() int {
-	return len(b.buf)
+	return b.cap
 }
 
-// Cap 返回缓冲区容量。
-func (b *ReaderBuffer) Cap() int {
-	return cap(b.buf)
+func (b *ReaderBuffer) IndexByte(n int) byte {
+	return b.buf[n]
+}
+
+func (b *ReaderBuffer) RemoveLast(n int) {
+	b.cap -= 2
+}
+func (b *ReaderBuffer) Slice(start, end int) []byte {
+	return b.buf[start:end]
 }

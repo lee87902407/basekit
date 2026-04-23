@@ -12,11 +12,6 @@ func (b *WriterBuffer) WriteBytes() int {
 	return b.capacity - b.idx
 }
 
-// Len 返回当前已写入长度。
-func (b *WriterBuffer) Len() int {
-	return b.idx
-}
-
 // Cap 返回缓冲区容量。
 func (b *WriterBuffer) Cap() int {
 	return b.capacity
