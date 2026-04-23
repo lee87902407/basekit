@@ -21,6 +21,13 @@ func (b *Scope) CloneByBuffer(buf *WriterBuffer) *WriterBuffer {
 	return dup
 }
 
+func (b *Scope) CloneFromBytes(bytes []byte) *WriterBuffer {
+	var capacity = cap(bytes)
+	var buf = b.NewWriterBuffer(capacity)
+	buf.Append(bytes)
+	return buf
+}
+
 func (s *Scope) NewWriterBuffer(capacity int) *WriterBuffer {
 	b := &WriterBuffer{buf: s.pool.get(capacity), idx: 0, capacity: capacity}
 	s.writers = append(s.writers, b)

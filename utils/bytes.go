@@ -101,7 +101,7 @@ func RespDataToU32(b []byte) (uint32, error) {
 		var i = 0
 		switch b[0] {
 		case '-':
-			return 0, &strconv.NumError{Func: "Btou32", Num: string(b), Err: strconv.ErrSyntax}
+			return 0, &strconv.NumError{Func: "RespDataToU32", Num: string(b), Err: strconv.ErrSyntax}
 		case '+':
 			i++
 		}
@@ -128,7 +128,7 @@ func RespDataToU64(b []byte) (uint64, error) {
 		var i = 0
 		switch b[0] {
 		case '-':
-			return 0, &strconv.NumError{Func: "Btou64", Num: string(b), Err: strconv.ErrSyntax}
+			return 0, &strconv.NumError{Func: "RespDataToU64", Num: string(b), Err: strconv.ErrSyntax}
 		case '+':
 			i++
 		}
