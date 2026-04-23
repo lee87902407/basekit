@@ -5,7 +5,6 @@ type WriterBuffer struct {
 	buf      []byte
 	idx      int
 	capacity int
-	scope    *Scope
 }
 
 // Len 返回缓冲区长度。
@@ -22,14 +21,6 @@ func (b *WriterBuffer) Cap() int {
 func (b *WriterBuffer) Reset() {
 	b.buf = b.buf[:0]
 	b.idx = 0
-}
-
-func (b *WriterBuffer) CloneByBuffer() *WriterBuffer {
-	dup := b.scope.NewWriterBuffer(b.capacity)
-	dup.idx = b.idx
-	dup.capacity = b.capacity
-	copy(dup.buf, b.buf)
-	return dup
 }
 
 //// EnsureCapacity 确保缓冲区至少还有 additional 字节的剩余容量。
@@ -79,6 +70,7 @@ func (b *WriterBuffer) AppendByte(v byte) {
 	if b.capacity-b.idx < 1 {
 		panic("mempool: buffer overflow")
 	}
-	b.buf = append(b.buf, v)
+	b.buf = b.buf[:b.idx+1]
+	b.buf[b.idx] = v
 	b.idx++
 }

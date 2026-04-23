@@ -13,10 +13,42 @@ func (s *Scope) Get(size int) []byte {
 	return buf
 }
 
+func (b *Scope) CloneByBuffer(buf *WriterBuffer) *WriterBuffer {
+	dup := b.NewWriterBuffer(buf.capacity)
+	copy(dup.buf, buf.buf)
+	dup.idx = buf.idx
+	dup.capacity = buf.capacity
+	return dup
+}
+
 func (s *Scope) NewWriterBuffer(capacity int) *WriterBuffer {
-	b := &WriterBuffer{buf: s.pool.get(capacity), scope: s, idx: 0, capacity: capacity}
+	b := &WriterBuffer{buf: s.pool.get(capacity), idx: 0, capacity: capacity}
 	s.writers = append(s.writers, b)
 	return b
+}
+
+func (s *Scope) ResetWriterBufferByCapacity(buf *WriterBuffer, capacity int) {
+	if capacity <= 0 {
+		panic("invalid capacity")
+	}
+	if capacity < buf.idx {
+		buf.buf = buf.buf[:capacity]
+		buf.idx = capacity
+		buf.capacity = capacity
+		return
+	}
+	if capacity <= cap(buf.buf) {
+		buf.buf = buf.buf[:capacity]
+		buf.capacity = capacity
+		return
+	}
+
+	next := s.pool.get(capacity)
+	next = next[:capacity]
+	copy(next[:buf.idx], buf.buf[:buf.idx])
+	s.pool.put(buf.buf)
+	buf.buf = next
+	buf.capacity = capacity
 }
 
 func (s *Scope) Close() {

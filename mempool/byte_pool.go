@@ -116,7 +116,6 @@ func (p *BytePool) put(buf []byte) {
 		p.onDrop(capacity, "non_bucket_capacity")
 		return
 	}
-	full := buf[:capacity]
-	class.Pool.Put(full[:0])
+	class.Pool.Put(buf[:0])
 	p.onPut(capacity, capacity, true)
 }
