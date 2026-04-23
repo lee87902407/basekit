@@ -95,11 +95,11 @@ func (p *BytePool) get(size int) []byte {
 	if v := class.Pool.Get(); v != nil {
 		buf := v.([]byte)
 		p.onGet(size, bucket, true)
-		return buf[:bucket]
+		return buf[:size]
 	}
 	buf := make([]byte, bucket)
 	p.onGet(size, bucket, false)
-	return buf[:bucket]
+	return buf[:size]
 }
 
 func (p *BytePool) put(buf []byte) {
@@ -116,6 +116,6 @@ func (p *BytePool) put(buf []byte) {
 		p.onDrop(capacity, "non_bucket_capacity")
 		return
 	}
-	class.Pool.Put(buf[:capacity])
+	class.Pool.Put(buf[:0])
 	p.onPut(capacity, capacity, true)
 }
